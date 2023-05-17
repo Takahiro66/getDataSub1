@@ -1,11 +1,67 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <h1>hello</h1>
+    <title>ドコモバイクシェアのデータを取得して保存</title>
   </head>
-  <body></body>
+  <body>
+    <div id="downloadLinksContainer"></div>
+    <script>
+      let linkIndex = 1;
+
+      function createDownloadLink() {
+        let now = new Date();
+        let month = now.getMonth() + 1;
+        let date = now.getDate();
+        let hour = now.getHours();
+        let minute = now.getMinutes();
+        fetch(
+          "https://api-public.odpt.org/api/v4/gbfs/docomo-cycle-tokyo/station_status.json"
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            const filename = "docomo-bikeshare-data-" + linkIndex + ".json";
+            const jsonData = JSON.stringify(data);
+            const blob = new Blob([jsonData], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const downloadLinksContainer = document.getElementById(
+              "downloadLinksContainer"
+            );
+            const downloadLink = document.createElement("a");
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            downloadLink.textContent =
+              month + "月" + date + "日" + hour + "時" + minute + "分";
+            downloadLinksContainer.appendChild(downloadLink);
+
+            linkIndex++;
+          })
+          .catch((error) => console.error(error));
+      }
+
+      function startNextExecution() {
+        const currentTime = new Date();
+        if (currentTime.getSeconds() % 10 === 0) {
+          createDownloadLink();
+        }
+      }
+
+      // 次の秒の開始時に実行するためのタイマーを設定
+      const currentTime = new Date();
+      const nextSecond = new Date(
+        currentTime.getFullYear(),
+        currentTime.getMonth(),
+        currentTime.getDate(),
+        currentTime.getHours(),
+        currentTime.getMinutes(),
+        currentTime.getSeconds() + 1
+      );
+      const timeUntilNextSecond = nextSecond.getTime() - currentTime.getTime();
+      setTimeout(() => {
+        setInterval(startNextExecution, 10000); // 10秒ごとに実行
+        startNextExecution(); // 初回の実行
+      }, timeUntilNextSecond);
+    </script>
+  </body>
 </html>
